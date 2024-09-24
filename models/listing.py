@@ -6,7 +6,6 @@ from .auction import AuctionDetails
 
 
 class Listing:
-
     __slots__ = (
         "_id",
         "_created_at",

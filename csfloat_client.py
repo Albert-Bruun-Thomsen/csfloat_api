@@ -3,6 +3,7 @@ from typing import Iterable, Union, Optional
 from .models.listing import Listing
 from .models.buy_orders import BuyOrders
 from .models.me import Me
+from .models.stall import Stall
 
 __all__ = "Client"
 
@@ -45,8 +46,14 @@ class Client:
             async with session.request(method=method, url=url, ssl=False, json=json_data) as response:
                 if response.status in self.ERROR_MESSAGES:
                     raise Exception(self.ERROR_MESSAGES[response.status])
+
                 if response.status != 200:
-                    raise Exception(f'Error: {response.status}')
+                    try:
+                        error_details = await response.json()
+                    except Exception:
+                        error_details = await response.text()
+                    raise Exception(f'Error: {response.status}\nResponse Body: {error_details}')
+
                 if response.content_type != 'application/json':
                     raise Exception(f"Expected JSON, got {response.content_type}")
 
@@ -237,6 +244,25 @@ class Client:
             return response
 
         return Listing(data=response)
+
+    async def get_stall(
+            self, user_id: int, *, limit: int = 40, raw_response: bool = False
+    ) -> Optional[Stall]:
+        """
+        :param user_id: The ID of the user whose stall information is to be retrieved
+        :param limit: The maximum number of listings to return. Defaults to 40.
+        :param raw_response: Returns the raw response from the API
+        :return: Optional[Stall]: A Stall object containing the user's listings if `raw_response` is False.
+        """
+        parameters = f'/users/{user_id}/stall?limit={limit}'
+        method = 'GET'
+
+        response = await self._request(method=method, parameters=parameters)
+
+        if raw_response:
+            return response
+
+        return Stall(data=response)
 
     async def create_listing(
         self,
