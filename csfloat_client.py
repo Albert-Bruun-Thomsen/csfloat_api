@@ -1,9 +1,9 @@
 import aiohttp
 from typing import Iterable, Union, Optional
-from .models.listing import Listing
-from .models.buy_orders import BuyOrders
-from .models.me import Me
-from .models.stall import Stall
+from models.listing import Listing
+from models.buy_orders import BuyOrders
+from models.me import Me
+from models.stall import Stall
 
 __all__ = "Client"
 
@@ -11,7 +11,7 @@ _API_URL = 'https://csfloat.com/api/v1'
 
 
 class Client:
-    _SUPPORTED_METHODS = ['GET', 'POST']
+    _SUPPORTED_METHODS = ['GET', 'POST', 'DELETE']
     ERROR_MESSAGES = {
         401: 'Unauthorized -- Your API key is wrong.',
         403: 'Forbidden -- The requested resource is hidden for administrators only.',
@@ -227,7 +227,7 @@ class Client:
             return response
 
         listings = [
-            Listing(data=item) for item in response
+            Listing(data=item) for item in response["data"]
         ]
 
         return listings
@@ -263,6 +263,15 @@ class Client:
             return response
 
         return Stall(data=response)
+
+    async def get_watchlist(self):
+        pass
+
+    async def get_offers(self):
+        pass
+
+    async def delete_order(self, *, order_id: int):
+        pass
 
     async def create_listing(
         self,
