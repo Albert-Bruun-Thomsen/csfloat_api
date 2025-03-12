@@ -332,3 +332,17 @@ class Client:
         }
         response = await self._request(method=method, parameters=parameters, json_data=json_data)
         return response
+
+    async def buy_now(
+            self, *, total_price: int, listing_id: str
+    ) -> Optional[dict]:
+        parameters = "/listings/buy"
+        method = "POST"
+
+        json_data = {
+            "total_price": total_price,
+            "contract_ids": [str(listing_id)]
+        }
+
+        response = await self._request(method=method, parameters=parameters, json_data=json_data)
+        return response
