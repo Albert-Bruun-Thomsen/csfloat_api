@@ -1,4 +1,6 @@
 import aiohttp
+import re
+from aiohttp_socks.connector import ProxyConnector
 from typing import Iterable, Union, Optional
 from .models.listing import Listing
 from .models.buy_orders import BuyOrders
@@ -27,14 +29,40 @@ class Client:
 
     __slots__ = (
         "API_KEY",
-        "_headers"
+        "proxy",
+        "_headers",
+        "_connector"
     )
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, proxy: str = None) -> None:
         self.API_KEY = api_key
+        self.proxy = proxy
+        self._validate_proxy()
         self._headers = {
             'Authorization': self.API_KEY
         }
+        self._connector = ProxyConnector.from_url(self.proxy, ttl_dns_cache=300) if self.proxy else aiohttp.TCPConnector(
+            resolver=aiohttp.resolver.AsyncResolver(),
+            limit_per_host=50
+        )
+
+    def _validate_proxy(self) -> None:
+        """Validates the proxy URL format.
+
+        Raises:
+            ValueError: If the proxy URL format is invalid or the port is out of range.
+        """
+        if not self.proxy:
+            return  # Proxy is not set, which is acceptable
+        # Regular expression to check the format: socks5://user:pass@host:port, etc.
+        pattern = r'^(socks5|socks4|http|https)://(\w+:\w+@)?[\w.-]+:\d+$'
+        if not re.match(pattern, self.proxy):
+            raise ValueError(
+                f"Invalid proxy URL format: {self.proxy}. Expected format like 'socks5://user:pass@host:port'")
+        # Check the port
+        port = self.proxy.split(':')[-1]
+        if not port.isdigit() or not (1 <= int(port) <= 65535):
+            raise ValueError(f"Invalid port in proxy URL: {port}")
 
     async def _request(self, method: str, parameters: str, json_data=None) -> Optional[dict]:
         if method not in self._SUPPORTED_METHODS:
@@ -42,7 +70,7 @@ class Client:
 
         url = f'{_API_URL}{parameters}'
 
-        async with aiohttp.ClientSession(headers=self._headers) as session:
+        async with aiohttp.ClientSession(connector=self._connector, headers=self._headers) as session:
             async with session.request(method=method, url=url, ssl=False, json=json_data) as response:
                 if response.status in self.ERROR_MESSAGES:
                     raise Exception(self.ERROR_MESSAGES[response.status])
