@@ -27,24 +27,49 @@ import asyncio
 from csfloat_api.csfloat_client import Client
 
 async def main():
-    # Initialize the client (prices are in cents)
-    client = Client(api_key="YOUR_API_KEY")
+    async with Client(api_key="YOUR_API_KEY") as client:
+        # Fetch up to 50 listings priced between $1.00 and $10.00 (i.e., 100–1000 cents)
+        listings = await client.get_all_listings(min_price=100, max_price=1000)
+        for listing in listings["listings"]:
+            print(f"ID: {listing.id}, Price: {listing.price} cents, Float: {listing.item.float_value}")
 
-    # Fetch up to 50 listings priced between $1.00 and $10.00 (i.e., 100–1000 cents)
-    listings = await client.get_all_listings(min_price=100, max_price=1000)
-    for listing in listings["listings"]:
-        print(f"ID: {listing.id}, Price: {listing.price} cents, Float: {listing.item.float_value}")
-
-    # Create a buy order for an item
-    buy_order = await client.create_buy_order(
-        market_hash_name="AK-47 | Redline (Field-Tested)",
-        max_price=5000,  # 5000 cents = $50.00
-        quantity=1
-    )
-    print(buy_order)
+        # Create a buy order for an item
+        buy_order = await client.create_buy_order(
+            market_hash_name="AK-47 | Redline (Field-Tested)",
+            max_price=5000,  # 5000 cents = $50.00
+            quantity=1
+        )
+        print(buy_order)
 
 asyncio.run(main())
 ```
+
+## Session Management
+
+The `Client` class manages an underlying HTTP session using `aiohttp.ClientSession`. To ensure that resources are properly released, it is important to close the session when you are done using the client.
+
+### Using `async with`
+
+The recommended way to use the `Client` is with an `async with` statement, which automatically closes the session when the block is exited:
+
+```python
+async with Client(api_key="YOUR_API_KEY") as client:
+    # Use the client...
+```
+
+### Manual Session Closing
+
+If you cannot use `async with`, you can manually close the session using the `close` method:
+
+```python
+client = Client(api_key="YOUR_API_KEY")
+try:
+    # Use the client...
+finally:
+    await client.close()
+```
+
+Failing to close the session may result in warnings about unclosed client sessions and potential resource leaks.
 
 ## Core Methods
 
