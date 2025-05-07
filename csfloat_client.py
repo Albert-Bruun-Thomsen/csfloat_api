@@ -222,12 +222,10 @@ class Client:
         self._validate_category(category)
         self._validate_sort_by(sort_by)
         self._validate_type(type_)
-
         parameters = (
             f'/listings?page={page}&limit={limit}&sort_by={sort_by}'
             f'&category={category}&type={type_}'
         )
-
         if min_price is not None:
             parameters += f'&min_price={min_price}'
         if max_price is not None:
@@ -252,18 +250,12 @@ class Client:
             parameters += f'&collection={collection}'
         if market_hash_name is not None:
             parameters += f'&market_hash_name={market_hash_name}'
-
         method = 'GET'
 
         response = await self._request(method=method, parameters=parameters)
-
         if raw_response:
             return response
-
-        listings = [
-            Listing(data=item) for item in response["data"]
-        ]
-
+        listings = [Listing(data=item) for item in response["data"]]
         return listings
 
     async def get_specific_listing(
