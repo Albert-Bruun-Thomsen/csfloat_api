@@ -85,7 +85,7 @@ The client raises exceptions for HTTP errors with clear messages:
 
 ## Contributing
 
-Contributions are welcome! Please submit issues and pull requests on the [GitHub repository](https://github.com/yourusername/csfloat_api).
+Contributions are welcome! Please submit issues and pull requests on the [GitHub repository](https://github.com/Rushifakami/csfloat_api).
 
 ## License
 
