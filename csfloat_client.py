@@ -31,7 +31,8 @@ class Client:
         "API_KEY",
         "proxy",
         "_headers",
-        "_connector"
+        "_connector",
+        "_session"
     )
 
     def __init__(self, api_key: str, proxy: str = None) -> None:
@@ -45,6 +46,16 @@ class Client:
             resolver=aiohttp.resolver.AsyncResolver(),
             limit_per_host=50
         )
+        self._session = aiohttp.ClientSession(connector=self._connector, headers=self._headers)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self._session.close()
+
+    async def close(self):
+        await self._session.close()
 
     def _validate_proxy(self) -> None:
         """Validates the proxy URL format.
@@ -70,22 +81,21 @@ class Client:
 
         url = f'{_API_URL}{parameters}'
 
-        async with aiohttp.ClientSession(connector=self._connector, headers=self._headers) as session:
-            async with session.request(method=method, url=url, ssl=False, json=json_data) as response:
-                if response.status in self.ERROR_MESSAGES:
-                    raise Exception(self.ERROR_MESSAGES[response.status])
+        async with self._session.request(method=method, url=url, ssl=False, json=json_data) as response:
+            if response.status in self.ERROR_MESSAGES:
+                raise Exception(self.ERROR_MESSAGES[response.status])
 
-                if response.status != 200:
-                    try:
-                        error_details = await response.json()
-                    except Exception:
-                        error_details = await response.text()
-                    raise Exception(f'Error: {response.status}\nResponse Body: {error_details}')
+            if response.status != 200:
+                try:
+                    error_details = await response.json()
+                except Exception:
+                    error_details = await response.text()
+                raise Exception(f'Error: {response.status}\nResponse Body: {error_details}')
 
-                if response.content_type != 'application/json':
-                    raise Exception(f"Expected JSON, got {response.content_type}")
+            if response.content_type != 'application/json':
+                raise Exception(f"Expected JSON, got {response.content_type}")
 
-                return await response.json()
+            return await response.json()
 
     def _validate_category(self, category: int) -> None:
         if category not in (0, 1, 2, 3):
