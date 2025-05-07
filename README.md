@@ -32,7 +32,7 @@ async def main():
 
     # Fetch up to 50 listings priced between $1.00 and $10.00 (i.e., 100–1000 cents)
     listings = await client.get_all_listings(min_price=100, max_price=1000)
-    for listing in listings:
+    for listing in listings["listings"]:
         print(f"ID: {listing.id}, Price: {listing.price} cents, Float: {listing.item.float_value}")
 
     # Create a buy order for an item
