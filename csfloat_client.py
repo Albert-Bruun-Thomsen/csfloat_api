@@ -172,6 +172,12 @@ class Client:
 
         return listings
 
+    async def get_my_buy_orders(self, *, page: int = 0, limit: int = 10):
+        parameters = f"/me/buy-orders?page={page}&limit={limit}&order=desc"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
     async def get_all_listings(
             self,
             *,
@@ -301,6 +307,13 @@ class Client:
     async def delete_order(self, *, order_id: int):
         pass
 
+    async def delete_buy_order(self, *, id: int):
+        parameters = f"/buy-orders/{id}"
+        method = "DELETE"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+
     async def create_listing(
         self,
         *,
@@ -348,6 +361,23 @@ class Client:
         response = await self._request(method=method, parameters=parameters, json_data=json_data)
         return response
 
+    async def create_buy_order(
+            self,
+            *,
+            market_hash_name: str,
+            max_price: int,
+            quantity: int
+    ) -> Optional[dict]:
+        parameters = "/buy-orders"
+        method = "POST"
+        json_data = {
+            "market_hash_name": market_hash_name,
+            "max_price": max_price,
+            "quantity": quantity
+        }
+        response = await self._request(method=method, parameters=parameters, json_data=json_data)
+        return response
+
     async def make_offer(
             self, *, listing_id: int, price: int
     ) -> Optional[dict]:
@@ -370,6 +400,16 @@ class Client:
         json_data = {
             "total_price": total_price,
             "contract_ids": [str(listing_id)]
+        }
+        response = await self._request(method=method, parameters=parameters, json_data=json_data)
+        return response
+
+    async def accept_sale(self, *, trade_ids: list[str]):
+        parameters = "trades/bulk/accept"
+        method = "POST"
+
+        json_data = {
+            "trade_ids": trade_ids
         }
 
         response = await self._request(method=method, parameters=parameters, json_data=json_data)
