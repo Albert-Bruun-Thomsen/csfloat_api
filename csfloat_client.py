@@ -1,7 +1,7 @@
 import aiohttp
 import re
 from aiohttp_socks.connector import ProxyConnector
-from typing import Iterable, Union, Optional
+from typing import Iterable, Union, Optional, Dict, List
 from .models.listing import Listing
 from .models.buy_orders import BuyOrders
 from .models.me import Me
@@ -183,7 +183,7 @@ class Client:
             *,
             min_price: Optional[int] = None,
             max_price: Optional[int] = None,
-            page: int = 0,
+            cursor: Optional[str] = None,
             limit: int = 50,
             sort_by: str = 'best_deal',
             category: int = 0,
@@ -198,11 +198,11 @@ class Client:
             market_hash_name: Optional[str] = None,
             type_: str = 'buy_now',
             raw_response: bool = False
-    ) -> Union[Iterable[Listing], dict]:
+    ) -> Union[Dict[str, Union[List[Listing], Optional[str]]], dict]:
         """
         :param min_price: Only include listings have a price higher than this (in cents)
         :param max_price: Only include listings have a price lower than this (in cents)
-        :param page: Which page of listings to start from
+        :param cursor: Cursor to get the next page (issued by the server)
         :param limit: How many listings to return. Max of 50
         :param sort_by: How to order the listings
         :param category: Can be one of: 0 = any, 1 = normal, 2 = stattrak, 3 = souvenir
@@ -217,21 +217,29 @@ class Client:
         :param market_hash_name: Only include listings that have this market hash name
         :param type_: Either buy_now or auction
         :param raw_response: Returns the raw response from the API
-        :return:
+        :return: If raw_response is True, returns the full response as a dict.
+                 Otherwise, returns a dict with the following structure:
+                 {
+                     "listings": List[Listing],  # list of parsed listing objects
+                     "cursor": Optional[str]     # cursor string for pagination
+                 }
         """
         self._validate_category(category)
         self._validate_sort_by(sort_by)
         self._validate_type(type_)
+
         parameters = (
-            f'/listings?page={page}&limit={limit}&sort_by={sort_by}'
+            f'/listings?limit={limit}&sort_by={sort_by}'
             f'&category={category}&type={type_}'
         )
+        if cursor is not None:
+            parameters += f'&cursor={cursor}'
         if min_price is not None:
             parameters += f'&min_price={min_price}'
         if max_price is not None:
             parameters += f'&max_price={max_price}'
         if def_index is not None:
-            if isinstance(def_index, Iterable):
+            if isinstance(def_index, Iterable) and not isinstance(def_index, str):
                 def_index = ','.join(map(str, def_index))
             parameters += f'&def_index={def_index}'
         if min_float is not None:
@@ -250,13 +258,14 @@ class Client:
             parameters += f'&collection={collection}'
         if market_hash_name is not None:
             parameters += f'&market_hash_name={market_hash_name}'
-        method = 'GET'
 
+        method = 'GET'
         response = await self._request(method=method, parameters=parameters)
+
         if raw_response:
             return response
         listings = [Listing(data=item) for item in response["data"]]
-        return listings
+        return {"listings": listings, "cursor": response.get("cursor")}
 
     async def get_specific_listing(
             self, listing_id: int, *, raw_response: bool = False
