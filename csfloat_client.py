@@ -13,7 +13,7 @@ _API_URL = 'https://csfloat.com/api/v1'
 
 
 class Client:
-    _SUPPORTED_METHODS = ['GET', 'POST', 'DELETE']
+    _SUPPORTED_METHODS = ('GET', 'POST', 'DELETE')
     ERROR_MESSAGES = {
         401: 'Unauthorized -- Your API key is wrong.',
         403: 'Forbidden -- The requested resource is hidden for administrators only.',
@@ -114,6 +114,11 @@ class Client:
         if type_ not in ('buy_now', 'auction'):
             raise ValueError(f'Unknown type parameter "{type_}"')
 
+    def _validate_role(self, role: str) -> None:
+        valid_roles = ("seller", "buyer")
+        if role not in valid_roles:
+            raise ValueError(f'Unknown role parameter: {role}')
+
     async def get_exchange_rates(self) -> Optional[dict]:
         parameters = "/meta/exchange-rates"
         method = "GET"
@@ -131,6 +136,18 @@ class Client:
             return response
 
         return Me(data=response)
+
+    async def get_transactions(self, page: int = 0, limit: int = 10):
+        parameters = f"/me/transactions?page={page}&limit={limit}&order=desc"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def get_account_standing(self):
+        parameters = "/me/account-standing"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
 
     async def get_location(self) -> Optional[dict]:
         parameters = "/meta/location"
@@ -184,6 +201,14 @@ class Client:
 
     async def get_my_buy_orders(self, *, page: int = 0, limit: int = 10):
         parameters = f"/me/buy-orders?page={page}&limit={limit}&order=desc"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def get_sales(self, market_hash_name: str, paint_index: int = None):
+        parameters = f"/history/{market_hash_name}/sales"
+        if paint_index is not None:
+            parameters += f"?paint_index={paint_index}"
         method = "GET"
         response = await self._request(method=method, parameters=parameters)
         return response
@@ -309,17 +334,42 @@ class Client:
 
         return Stall(data=response)
 
-    async def get_watchlist(self):
-        pass
+    async def get_inventory(self):
+        parameters = f"/me/inventory"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
 
-    async def get_offers(self):
-        pass
+    async def get_watchlist(self, limit: int = 40):
+        parameters = f"/me/watchlist?limit={limit}"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def get_offers(self, limit: int = 40):
+        parameters = f"/me/offers-timeline?limit={limit}"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def get_trade_history(self, role: str = "seller", limit: int = 30, page: int = 0):
+        self._validate_role(role)
+        parameters = f"/me/trades?role={role}&state=failed,cancelled,verified&limit={limit}&page={page}"
+        method = "GET"
+        response = await self._request(method=method, parameters=parameters)
+        return response
 
     async def delete_order(self, *, order_id: int):
         pass
 
     async def delete_buy_order(self, *, id: int):
         parameters = f"/buy-orders/{id}"
+        method = "DELETE"
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def delete_watchlist(self, *, id: int):
+        parameters = f"/listings/{id}/watchlist"
         method = "DELETE"
         response = await self._request(method=method, parameters=parameters)
         return response
