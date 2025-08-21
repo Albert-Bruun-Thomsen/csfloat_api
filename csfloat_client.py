@@ -13,7 +13,7 @@ _API_URL = 'https://csfloat.com/api/v1'
 
 
 class Client:
-    _SUPPORTED_METHODS = ('GET', 'POST', 'DELETE')
+    _SUPPORTED_METHODS = ('GET', 'POST', 'DELETE', 'PATCH')
     ERROR_MESSAGES = {
         401: 'Unauthorized -- Your API key is wrong.',
         403: 'Forbidden -- The requested resource is hidden for administrators only.',
@@ -359,8 +359,11 @@ class Client:
         response = await self._request(method=method, parameters=parameters)
         return response
 
-    async def delete_order(self, *, order_id: int):
-        pass
+    async def delete_listing(self, *, listing_id: int):
+        parameters = f"/listings/{listing_id}"
+        method = "DELETE"
+        response = await self._request(method=method, parameters=parameters)
+        return response
 
     async def delete_buy_order(self, *, id: int):
         parameters = f"/buy-orders/{id}"
@@ -473,5 +476,15 @@ class Client:
             "trade_ids": trade_ids
         }
 
+        response = await self._request(method=method, parameters=parameters, json_data=json_data)
+        return response
+
+    async def update_listing_price(self, *, listing_id: int, price: int):
+        parameters = f"/listings/{listing_id}"
+        method = "PATCH"
+
+        json_data = {
+            "price": price
+        }
         response = await self._request(method=method, parameters=parameters, json_data=json_data)
         return response
