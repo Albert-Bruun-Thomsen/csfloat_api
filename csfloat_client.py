@@ -97,11 +97,13 @@ class Client:
 
             return await response.json()
 
-    def _validate_category(self, category: int) -> None:
+    @staticmethod
+    def _validate_category(category: int) -> None:
         if category not in (0, 1, 2, 3):
             raise ValueError(f'Unknown category parameter "{category}"')
 
-    def _validate_sort_by(self, sort_by: str) -> None:
+    @staticmethod
+    def _validate_sort_by(sort_by: str) -> None:
         valid_sort_by = (
             'lowest_price', 'highest_price', 'most_recent', 'expires_soon',
             'lowest_float', 'highest_float', 'best_deal', 'highest_discount',
@@ -110,11 +112,13 @@ class Client:
         if sort_by not in valid_sort_by:
             raise ValueError(f'Unknown sort_by parameter "{sort_by}"')
 
-    def _validate_type(self, type_: str) -> None:
+    @staticmethod
+    def _validate_type(type_: str) -> None:
         if type_ not in ('buy_now', 'auction'):
             raise ValueError(f'Unknown type parameter "{type_}"')
 
-    def _validate_role(self, role: str) -> None:
+    @staticmethod
+    def _validate_role(role: str) -> None:
         valid_roles = ("seller", "buyer")
         if role not in valid_roles:
             raise ValueError(f'Unknown role parameter: {role}')
