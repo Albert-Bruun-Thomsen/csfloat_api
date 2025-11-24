@@ -1,4 +1,5 @@
 from typing import Dict, Any, Optional
+from warnings import deprecated
 
 
 class StickerReference:
@@ -47,6 +48,11 @@ class Sticker:
         self._icon_url = data.get("icon_url")
         self._name = data.get("name")
         self._reference = data.get("reference")
+
+    @property
+    @deprecated("'stickerId' is deprecated; use 'sticker_id' instead.")
+    def stickerId(self) -> Optional[int]:
+        return self.sticker_id
 
     @property
     def sticker_id(self) -> Optional[int]:
