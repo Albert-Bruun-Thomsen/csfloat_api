@@ -1,7 +1,7 @@
 import aiohttp
 import re
 from aiohttp_socks.connector import ProxyConnector
-from typing import Iterable, Union, Optional, Dict, List
+from typing import Iterable, Union, Optional, Dict, List, Sequence
 from .models.listing import Listing
 from .models.buy_orders import BuyOrders
 from .models.me import Me
@@ -119,6 +119,21 @@ class Client:
         if role not in valid_roles:
             raise ValueError(f'Unknown role parameter: {role}')
 
+    @staticmethod
+    def _validate_trade_states(states: Sequence[str]) -> str:
+        allowed_states = {"queued", "pending", "verified", "failed", "cancelled"}
+        if isinstance(states, str) or not isinstance(states, Sequence):
+            raise ValueError("states must be a sequence of trade state strings.")
+        unique_states = []
+        for state in states:
+            if state not in allowed_states:
+                raise ValueError(f'Unknown trade state "{state}"')
+            if state not in unique_states:
+                unique_states.append(state)
+        if not unique_states:
+            raise ValueError("states must include at least one trade state.")
+        return ",".join(unique_states)
+
     async def get_exchange_rates(self) -> Optional[dict]:
         parameters = "/meta/exchange-rates"
         method = "GET"
@@ -160,6 +175,16 @@ class Client:
             self, limit: int = 500, page: int = 0
     ) -> Optional[dict]:
         parameters = f"/me/trades?state=pending&limit={limit}&page={page}"
+        method = "GET"
+
+        response = await self._request(method=method, parameters=parameters)
+        return response
+
+    async def get_trades(
+            self, states: Sequence[str], limit: int = 500, page: int = 0
+    ) -> Optional[dict]:
+        state_param = self._validate_trade_states(states)
+        parameters = f"/me/trades?state={state_param}&limit={limit}&page={page}"
         method = "GET"
 
         response = await self._request(method=method, parameters=parameters)
